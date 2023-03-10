@@ -184,16 +184,15 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
                     )
                     return loss
 
-                def compute_metrics(logits, labels):
-                    accuracy = tf.reduce_mean(
-                        tf.dtypes.cast(
-                            tf.math.argmax(logits, axis=-1) == labels, dtype=tf.int16
-                        )
+                def compute_metrics(logits, labels, depth=seq_length):
+                    one_hot_labels = tf.one_hot(labels, depth=depth, dtype=tf.float32)
+                    accuracy = tf.keras.metrics.categorical_accuracy(
+                        one_hot_labels,
+                        logits,
                     )
-                    distance = tf.reduce_mean(
-                        tf.math.abs(
-                            tf.cast(tf.math.argmax(logits, axis=-1), tf.int32) - labels
-                        )
+                    distance = tf.keras.metrics.mean_absolute_error(
+                        labels,
+                        tf.math.argmax(logits, axis=-1, output_type=tf.dtypes.int32),
                     )
                     return accuracy, distance
 
@@ -211,8 +210,8 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
 
                 answer_type_loss = compute_label_loss(answer_type_logits, answer_types)
 
-                answer_type_accuracy, answer_type_distance = compute_metrics(
-                    answer_type_logits, answer_types
+                answer_type_accuracy, _ = compute_metrics(
+                    answer_type_logits, answer_types, len(data.AnswerType)
                 )
 
                 total_loss = (start_loss + end_loss + answer_type_loss) / 3.0
@@ -224,24 +223,26 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
                     num_warmup_steps,
                     use_tpu,
                 )
-
-                logging_hook = tf.train.LoggingTensorHook(
-                    {
-                        "training_loss": total_loss,
-                        "start_accuracy": start_accuracy,
-                        "end_accuracy": end_accuracy,
-                        "answer_type_accuracy": answer_type_accuracy,
-                        "start_distance": start_distance,
-                        "end_distance": end_distance,
-                        "answer_type_distance": answer_type_distance,
-                    },
-                    every_n_iter=10,
+                tf.print(start_accuracy)
+                tf.print(start_logits)
+                tf.print(start_positions)
+                tf.summary.scalar("start_accuracy", tf.math.reduce_mean(start_accuracy))
+                tf.summary.scalar("start_distance", tf.math.reduce_mean(start_distance))
+                tf.summary.scalar("end_accuracy", tf.math.reduce_mean(end_accuracy))
+                tf.summary.scalar("end_distance", tf.math.reduce_mean(end_distance))
+                tf.summary.scalar(
+                    "answer_type_accuracy", tf.math.reduce_mean(answer_type_accuracy)
+                )
+                summary_hook = tf.train.SummarySaverHook(
+                    1,
+                    output_dir="/content/SLP-Canine/output",
+                    summary_op=tf.summary.merge_all(),
                 )
                 output_spec = tf_estimator.tpu.TPUEstimatorSpec(
                     mode=mode,
                     loss=total_loss,
                     train_op=train_op,
-                    training_hooks=[logging_hook],
+                    training_hooks=[summary_hook],
                     scaffold_fn=scaffold_fn,
                 )
             elif mode == tf_estimator.ModeKeys.PREDICT:
