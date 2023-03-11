@@ -99,7 +99,13 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
         return start_logits, end_logits, answer_type_logits
 
     def model_fn_builder(
-        self, init_checkpoint, learning_rate, num_train_steps, num_warmup_steps, use_tpu
+        self,
+        init_checkpoint,
+        learning_rate,
+        num_train_steps,
+        num_warmup_steps,
+        output_dir,
+        use_tpu,
     ):
         """Returns `model_fn` closure for TPUEstimator."""
 
@@ -235,7 +241,7 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
                 )
                 summary_hook = tf.train.SummarySaverHook(
                     1,
-                    output_dir="output",
+                    output_dir=output_dir,
                     summary_op=tf.summary.merge_all(),
                 )
                 output_spec = tf_estimator.tpu.TPUEstimatorSpec(

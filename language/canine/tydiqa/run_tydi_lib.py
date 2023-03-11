@@ -162,6 +162,7 @@ class TyDiRunner(metaclass=abc.ABCMeta):
         learning_rate=self.learning_rate,
         num_train_steps=num_train_steps,
         num_warmup_steps=num_warmup_steps,
+        output_dir=self.output_dir,
         use_tpu=self.use_tpu)
 
   @abc.abstractmethod
