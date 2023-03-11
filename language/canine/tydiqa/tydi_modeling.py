@@ -235,7 +235,7 @@ class GenericModelBuilder(metaclass=abc.ABCMeta):
                 )
                 summary_hook = tf.train.SummarySaverHook(
                     1,
-                    output_dir="/content/SLP-Canine/output",
+                    output_dir="output",
                     summary_op=tf.summary.merge_all(),
                 )
                 output_spec = tf_estimator.tpu.TPUEstimatorSpec(

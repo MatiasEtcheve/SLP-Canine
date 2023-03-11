@@ -177,8 +177,8 @@ def main(_):
         fail_on_invalid=FLAGS.fail_on_invalid,
     ):
         if (
-            FLAGS.desired_language is None
-            or entry["language"] != FLAGS.desired_language
+            FLAGS.desired_language is not None
+            and entry["language"] != FLAGS.desired_language
         ):
             continue
         errors = []
